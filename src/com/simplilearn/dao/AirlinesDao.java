@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hibernate.Criteria;
 import org.hibernate.Filter;
@@ -32,7 +34,7 @@ public class AirlinesDao {
 		AirlinesDao airlinesDao = new AirlinesDao();
 //		airlinesDao.createCompleteSetDatabase();
 //		
-		Airline airline = airlinesDao.createAirline("Indigo", "Economical Flights");
+		Airline airline = airlinesDao.createAirline("Fly Dubai", "Economical Flights");
 		Route route = airlinesDao.createRoute("Dubai", "Kannur", airline);
 		Itinerary itinerary = airlinesDao.createItinerary("10:00", "14:00", route);
 		
@@ -87,10 +89,14 @@ public class AirlinesDao {
 		
 		Transaction t = session.beginTransaction();
 		
-		Criteria query = session.createCriteria( Airline.class );
-	    query.add( Restrictions.eq( "name", name ) );
+		System.out.println("Use Airline Filter");
 		
-		List<Airline> airlines = query.list();
+		Filter airlineFilter = session.enableFilter("airlineFilter");
+		airlineFilter.setParameter("nameParam", name);
+		org.hibernate.query.Query query1 = session.createQuery("select p from Airline p");
+		List<Airline> airlines = query1.getResultList();
+		
+
 		
 		Airline createdAirline = null;
 		if (airlines.isEmpty()) {
@@ -124,33 +130,30 @@ public class AirlinesDao {
 		
 		Transaction t = session.beginTransaction();
 		
-		Criteria query = session.createCriteria( Route.class );
-	    query.add( Restrictions.eq( "source", source ) );
-	    query.add( Restrictions.eq( "destination", destination ) );
+		System.out.println("Current Route == "+airline.getRoutes().size()+ " "+airline.getRoutes());
 
-	    Criterion crAux1 = Restrictions.isNull("aid");
-	    Criterion crAux2 = (Criterion) query.createCriteria("aid")
-	        .add(Restrictions.eq("id", airline.getId()));
-	    query.add(Restrictions.or(crAux1, crAux2));
+		List<Route> routes = airline.getRoutes().stream().filter(p -> (p.getSource().equals(source) & p.getDestination().equals(destination))).collect(Collectors.toList());
 
-	    
-		List<Route> routes = query.list();
-		List<Route>currentRoutes = airline.getRoutes();
 		Route createdRoute = null;
-		if (routes.isEmpty()) {
-			createdRoute = new Route(source, destination);
+		List<Route>currentRoutes = airline.getRoutes();
+
+		if (routes.size() > 0) {
+			ListIterator<Route> routesIterator
+	            = routes.listIterator();
+		        while (routesIterator.hasNext()) {
+		        	createdRoute = routesIterator.next();
+		        }
 		}
 		else {
-			
-	        ListIterator<Route> routesIterator
-            = routes.listIterator();
-	        while (routesIterator.hasNext()) {
-	        	createdRoute = routesIterator.next();
-	        }
+			createdRoute = new Route(source, destination);
+			currentRoutes.add(createdRoute);
+
 		}
-		currentRoutes.add(createdRoute);
+
+		System.out.println("Current Route new == "+currentRoutes.size()+ " "+currentRoutes);
+
 		airline.setRoutes(currentRoutes);
-		session.save(airline);
+		session.update(airline);
 		t.commit();
 		session.close();
 	    sf.close();
@@ -169,28 +172,27 @@ public class AirlinesDao {
 		
 		Transaction t = session.beginTransaction();
 		
-		Criteria query = session.createCriteria( Itinerary.class );
-	    query.add( Restrictions.eq( "departureTime", departureTime ) );
-	    query.add( Restrictions.eq( "arrivaltime", arrivaltime ) );
-	    query.add( Restrictions.eq( "rid", route.getId() ) );
+		System.out.println("Current Itineries == "+route.getItineraries().size()+ " "+route.getItineraries());
 
-		List<Itinerary> itineraries = query.list();
-		List<Itinerary>currentItineraries = route.getItineraries();
 		Itinerary createdItinerary = null;
-		if (itineraries.isEmpty()) {
-			createdItinerary = new Itinerary(departureTime, arrivaltime);
+		List<Itinerary>currentItineraries = route.getItineraries();
+		List<Itinerary> itineraries = route.getItineraries().stream().filter(p -> (p.getArrivaltime().equals(arrivaltime) & p.getDepartureTime().equals(departureTime))).collect(Collectors.toList());
+
+		if (itineraries.size() > 0) {
+		        ListIterator<Itinerary> itineraryIterator
+	            = itineraries.listIterator();
+		        while (itineraryIterator.hasNext()) {
+		        	createdItinerary = itineraryIterator.next();
+		        }
 		}
 		else {
-			
-	        ListIterator<Itinerary> itineraryIterator
-            = itineraries.listIterator();
-	        while (itineraryIterator.hasNext()) {
-	        	createdItinerary = itineraryIterator.next();
-	        }
+			createdItinerary = new Itinerary(departureTime, arrivaltime);
+			currentItineraries.add(createdItinerary);
+
 		}
-		currentItineraries.add(createdItinerary);
+
 		route.setItineraries(currentItineraries);
-		session.save(route);
+		session.update(route);
 		t.commit();
 		session.close();
 	    sf.close();

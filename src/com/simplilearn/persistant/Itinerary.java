@@ -5,6 +5,7 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -13,6 +14,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.GenericGenerator;
 
 @Entity
@@ -24,6 +27,9 @@ public class Itinerary {
 		this.departureTime = departureTime;
 		this.arrivaltime = arrivaltime;
 	}
+	
+	public Itinerary(){}
+
 
 	@Id
 	@GeneratedValue(strategy= GenerationType.TABLE,generator="native")
@@ -37,7 +43,8 @@ public class Itinerary {
 	@Column(name = "arrivaltime")
 	private String arrivaltime;
 
-	@OneToMany(cascade = CascadeType.ALL)
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@Fetch(FetchMode.SELECT)
 	@JoinColumn(name="iid")
 	@OrderColumn(name="type")
 	private List<FlightClass> flightClassess;

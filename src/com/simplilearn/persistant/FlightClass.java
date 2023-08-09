@@ -19,6 +19,8 @@ public class FlightClass {
 		this.className = className;
 	}
 
+	public FlightClass(){}
+
 	@Id
 	@GeneratedValue(strategy= GenerationType.TABLE,generator="native")
 	@GenericGenerator(name = "native",strategy = "native")	
